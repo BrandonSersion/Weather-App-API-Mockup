@@ -17,21 +17,35 @@ function create_url(city, country_code)
 function fetch_weather(url)
 {
     fetch(url)
-    .then((resp) => resp.json())
+    .then((resp) =>
+    {
+        if (resp.ok)
+        {
+            return resp.json();
+        }
+        else
+        {
+            document.getElementById("error").innerHTML = "City not on record (check country code).";
+        }
+    })
     .then(function(resp) 
     {
-        let min = convert_temp(resp.main.temp_min);
-        document.getElementById('low').innerHTML = "Low: " + min;
-
-        let max = convert_temp(resp.main.temp_max);
-        document.getElementById('high').innerHTML = "High: " + max;
-
-        let now = convert_temp(resp.main.temp);
-        document.getElementById('now').innerHTML = "Now: " + now;
-
-        let desc = resp.weather[0].description;
-        document.getElementById('desc').innerHTML = desc;
+        document.getElementsByTagName("h2")[0].innerHTML = resp.name + ", " + resp.sys.country;
+        document.getElementById("low").innerHTML = "Low: " + convert_temp(resp.main.temp_min) + "&#176;F";
+        document.getElementById("high").innerHTML = "High: " + convert_temp(resp.main.temp_max) + "&#176;F";
+        document.getElementById("now").innerHTML = "Now: " + convert_temp(resp.main.temp) + "&#176;F";
+        document.getElementById("desc").innerHTML = resp.weather[0].description;
     });
+}
+
+function clear_error()
+{
+    document.getElementById('error').innerHTML = "";
+}
+
+function push_error(city_error, country_code_error)
+{
+    document.getElementById('error').innerHTML = city_error + country_code_error;
 }
 
 // validators
@@ -45,17 +59,25 @@ function validate_city(city)
     {
         return "City too long. ";
     }
+    else
+    {
+        return "";
+    }
 }
     
 function validate_country_code(country_code)
 {
     if(country_code.length == 0)
     {
-        return "Country code can't be empty.";
+        return "Country code can't be empty. ";
     }
     else if(country_code.length != 2)
     {
-        return "Country code should be 2 characters long (i.e. US). ";
+        return "Country code must be 2 characters long (i.e. US). ";
+    }
+    else
+    {
+        return "";
     }
 }
 
@@ -66,32 +88,23 @@ function convert_temp(kelvin)
     return Math.round(farenheit);
 }
 
-function capitalize_first_letters(str)
-{
-    for (var i = 0; i < str.length; i++) 
-    {
-        return str[0].toUpperCase() + str.slice(1);
-    }
-}
-
 
 // main
 function get_weather(url)
 {   
-    var elements = [];
-    var city_error = undefined;
-    var country_code_error = undefined;
+    var elements = get_elements();
+    var city_error = validate_city(elements[0]);
+    var country_code_error = validate_country_code(elements[1]);
 
-    elements = get_elements();
-    city_error = validate_city(elements[0]);
-    country_code_error = validate_country_code(elements[1]);
-
-    console.log(city_error);
-    console.log(country_code_error);
-
-    if(city_error == undefined && country_code_error == undefined)
+    if(city_error == "" && country_code_error == "")
     {
         var url = create_url(elements[0], elements[1]);
         fetch_weather(url);
+        clear_error();                
+    }
+    else
+    {
+        clear_error();
+        push_error(city_error, country_code_error);
     }
 }
